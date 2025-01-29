@@ -21,7 +21,7 @@ It also includes basic test files to verify functionalities.
 
 ## Building
 
-You can compile it with C++ 17+, on Windows. a Visual Studio solution file is provided.
+You can compile it with C++17, on Windows. A Visual Studio solution file is provided.
 
 ## Why Does This Exist?
 
