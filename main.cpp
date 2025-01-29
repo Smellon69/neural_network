@@ -14,12 +14,12 @@ using namespace nn;
  *        then prints final predictions.
  *
  * @param name Name of the task (e.g. "XOR").
- * @param inputs Vector of input matrices (each 1x2 for a 2-bit logic).
- * @param targets Vector of target matrices (each 1x1, 0 or 1).
+ * @param inputs Vector of input matrices (each 1 x N for N-bit logic).
+ * @param targets Vector of target matrices (each 1 x 1, 0 or 1).
  * @param layerSizes Network architecture (e.g., {2, 4, 1}).
  * @param activs Activations for each layer except input (e.g., {ReLU, Sigmoid}).
- * @param lossType Loss function to use (e.g., CrossEntropy).
- * @param optType Optimizer type (e.g., Momentum).
+ * @param lossType Loss function (CrossEntropy, etc.).
+ * @param optType Optimizer type (Momentum, SGD, etc.).
  * @param lr Learning rate.
  * @param momentum Momentum factor (if used by the optimizer).
  * @param epochs Number of training epochs.
@@ -43,7 +43,6 @@ void trainAndTestBinaryFunction(const std::string& name,
     // Train
     for (int e = 1; e <= epochs; ++e) {
         double totalLoss = 0.0;
-        // Here we do single-sample training across all samples
         for (size_t i = 0; i < inputs.size(); ++i) {
             double lossVal = net.trainSample(inputs[i], targets[i]);
             totalLoss += lossVal;
@@ -60,7 +59,8 @@ void trainAndTestBinaryFunction(const std::string& name,
         Matrix out = net.forward(inputs[i]);
         std::cout << "Input: (";
         for (size_t c = 0; c < inputs[i].cols(); ++c) {
-            std::cout << inputs[i](0, c) << ((c + 1 < inputs[i].cols()) ? ", " : "");
+            std::cout << inputs[i](0, c);
+            if (c + 1 < inputs[i].cols()) std::cout << ", ";
         }
         std::cout << ") -> " << out(0, 0)
             << " (target: " << targets[i](0, 0) << ")\n";
@@ -71,15 +71,11 @@ void trainAndTestBinaryFunction(const std::string& name,
 int main() {
     // --------------------------------------------------------------------------
     // 1) Logic: AND
-    // 2-bit input => 1-bit output
     // --------------------------------------------------------------------------
     {
-        std::vector<Matrix> inputs{
-            Matrix(1,2), Matrix(1,2), Matrix(1,2), Matrix(1,2)
-        };
-        std::vector<Matrix> targets{
-            Matrix(1,1), Matrix(1,1), Matrix(1,1), Matrix(1,1)
-        };
+        std::vector<Matrix> inputs(4, Matrix(1, 2));
+        std::vector<Matrix> targets(4, Matrix(1, 1));
+
         // (0,0) => 0
         inputs[0](0, 0) = 0; inputs[0](0, 1) = 0;  targets[0](0, 0) = 0;
         // (0,1) => 0
@@ -89,9 +85,7 @@ int main() {
         // (1,1) => 1
         inputs[3](0, 0) = 1; inputs[3](0, 1) = 1;  targets[3](0, 0) = 1;
 
-        // Architecture: 2 -> 4 -> 1
-        std::vector<size_t> layerSizes = { 2, 4, 1 };
-        // Activations: hidden => ReLU, output => Sigmoid
+        std::vector<size_t> layerSizes = { 2, 4, 1 };   // 2->4->1
         std::vector<ActivationType> activs = {
             ActivationType::ReLU,
             ActivationType::Sigmoid
@@ -101,21 +95,17 @@ int main() {
             layerSizes, activs,
             LossType::CrossEntropy,
             OptimizerType::Momentum,
-            /*lr=*/0.05, /*momentum=*/0.9,
-            /*epochs=*/5000,
-            /*logInterval=*/1000);
+            0.05, 0.9,
+            5000, 1000);
     }
 
     // --------------------------------------------------------------------------
     // 2) Logic: OR
     // --------------------------------------------------------------------------
     {
-        std::vector<Matrix> inputs{
-            Matrix(1,2), Matrix(1,2), Matrix(1,2), Matrix(1,2)
-        };
-        std::vector<Matrix> targets{
-            Matrix(1,1), Matrix(1,1), Matrix(1,1), Matrix(1,1)
-        };
+        std::vector<Matrix> inputs(4, Matrix(1, 2));
+        std::vector<Matrix> targets(4, Matrix(1, 1));
+
         // (0,0) => 0
         inputs[0](0, 0) = 0; inputs[0](0, 1) = 0;  targets[0](0, 0) = 0;
         // (0,1) => 1
@@ -125,7 +115,7 @@ int main() {
         // (1,1) => 1
         inputs[3](0, 0) = 1; inputs[3](0, 1) = 1;  targets[3](0, 0) = 1;
 
-        std::vector<size_t> layerSizes = { 2, 4, 1 };
+        std::vector<size_t> layerSizes = { 2, 4, 1 };   // 2->4->1
         std::vector<ActivationType> activs = {
             ActivationType::ReLU,
             ActivationType::Sigmoid
@@ -136,20 +126,16 @@ int main() {
             LossType::CrossEntropy,
             OptimizerType::Momentum,
             0.05, 0.9,
-            5000,
-            1000);
+            5000, 1000);
     }
 
     // --------------------------------------------------------------------------
     // 3) Logic: XOR
     // --------------------------------------------------------------------------
     {
-        std::vector<Matrix> inputs{
-            Matrix(1,2), Matrix(1,2), Matrix(1,2), Matrix(1,2)
-        };
-        std::vector<Matrix> targets{
-            Matrix(1,1), Matrix(1,1), Matrix(1,1), Matrix(1,1)
-        };
+        std::vector<Matrix> inputs(4, Matrix(1, 2));
+        std::vector<Matrix> targets(4, Matrix(1, 1));
+
         // (0,0) => 0
         inputs[0](0, 0) = 0; inputs[0](0, 1) = 0;  targets[0](0, 0) = 0;
         // (0,1) => 1
@@ -159,12 +145,12 @@ int main() {
         // (1,1) => 0
         inputs[3](0, 0) = 1; inputs[3](0, 1) = 1;  targets[3](0, 0) = 0;
 
-        // This time let's do 2 -> 4 -> 4 -> 1
+        // 2->4->4->1
         std::vector<size_t> layerSizes = { 2, 4, 4, 1 };
         std::vector<ActivationType> activs = {
-            ActivationType::ReLU,  // hidden 1
-            ActivationType::ReLU,  // hidden 2
-            ActivationType::Sigmoid // output
+            ActivationType::ReLU,
+            ActivationType::ReLU,
+            ActivationType::Sigmoid
         };
 
         trainAndTestBinaryFunction("XOR", inputs, targets,
@@ -172,7 +158,7 @@ int main() {
             LossType::CrossEntropy,
             OptimizerType::Momentum,
             0.05, 0.9,
-            10000, // a bit more training for XOR
+            10000,   // more epochs
             2000);
     }
 
@@ -180,12 +166,9 @@ int main() {
     // 4) Logic: NAND
     // --------------------------------------------------------------------------
     {
-        std::vector<Matrix> inputs{
-            Matrix(1,2), Matrix(1,2), Matrix(1,2), Matrix(1,2)
-        };
-        std::vector<Matrix> targets{
-            Matrix(1,1), Matrix(1,1), Matrix(1,1), Matrix(1,1)
-        };
+        std::vector<Matrix> inputs(4, Matrix(1, 2));
+        std::vector<Matrix> targets(4, Matrix(1, 1));
+
         // (0,0) => 1
         inputs[0](0, 0) = 0; inputs[0](0, 1) = 0;  targets[0](0, 0) = 1;
         // (0,1) => 1
@@ -195,7 +178,7 @@ int main() {
         // (1,1) => 0
         inputs[3](0, 0) = 1; inputs[3](0, 1) = 1;  targets[3](0, 0) = 0;
 
-        std::vector<size_t> layerSizes = { 2, 4, 1 };
+        std::vector<size_t> layerSizes = { 2, 4, 1 };   // 2->4->1
         std::vector<ActivationType> activs = {
             ActivationType::ReLU,
             ActivationType::Sigmoid
@@ -206,8 +189,59 @@ int main() {
             LossType::CrossEntropy,
             OptimizerType::Momentum,
             0.05, 0.9,
-            5000,
-            1000);
+            5000, 1000);
+    }
+
+    // --------------------------------------------------------------------------
+    // 5) Hard Task: 4-bit Parity (4->16->16->1)
+    //     Output is 1 if number of 1-bits is odd, else 0
+    // --------------------------------------------------------------------------
+    {
+        // We have 16 possible inputs for 4 bits (0000..1111)
+        // We'll store them, plus the target for parity:
+        std::vector<Matrix> inputs;
+        std::vector<Matrix> targets;
+        inputs.reserve(16);
+        targets.reserve(16);
+
+        for (int pattern = 0; pattern < 16; ++pattern) {
+            Matrix in(1, 4);
+            // Fill the 4 columns with the bits of 'pattern'
+            int countOnes = 0;
+            for (int bitIndex = 0; bitIndex < 4; ++bitIndex) {
+                int bitVal = (pattern >> bitIndex) & 1;
+                in(0, bitIndex) = bitVal;
+                if (bitVal == 1) ++countOnes;
+            }
+            inputs.push_back(in);
+
+            Matrix t(1, 1);
+            // 1 if odd number of bits set, 0 otherwise
+            t(0, 0) = (countOnes % 2 == 1) ? 1.0 : 0.0;
+            targets.push_back(t);
+        }
+
+        // For 4-bit parity, let's do a bigger/deeper net
+        // e.g. 4 -> 16 -> 16 -> 1
+        std::vector<size_t> layerSizes = { 4, 16, 16, 1 };
+        std::vector<ActivationType> activs = {
+            ActivationType::Tanh,
+            ActivationType::Tanh,
+            ActivationType::Sigmoid
+        };
+
+        // We'll train for a large number of epochs since it's tricky
+        // and we want it to converge (this might take a while).
+        // on my PC this takes like 2 minutes :)
+        int epochs = 200000;
+        int logInterval = 20000;
+
+        trainAndTestBinaryFunction("4-bit Parity", inputs, targets,
+            layerSizes, activs,
+            LossType::CrossEntropy,
+            OptimizerType::Momentum,
+            0.05, 0.9,
+            epochs, logInterval);
     }
 
     std::cout << "All tasks completed.\n";
